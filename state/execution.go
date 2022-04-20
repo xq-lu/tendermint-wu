@@ -127,7 +127,7 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 // from outside this package to process and commit an entire block.
 // It takes a blockID to avoid recomputing the parts hash.
 func (blockExec *BlockExecutor) ApplyBlock(state State, blockID types.BlockID, block *types.Block) (State, error) {
-	blockExec.logger.Debug("[Peppermint] Applying block", "height", block.Height, "numTxs", block.NumTxs, "blockSize", block.Size())
+	blockExec.logger.Debug("[Peppermint] Applying block", "height", block.Height, "numTxs", block.NumTxs, "blockSize:", block.Size())
 
 	if err := blockExec.ValidateBlock(state, block); err != nil {
 		return state, ErrInvalidBlock(err)
