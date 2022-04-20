@@ -328,7 +328,7 @@ func execBlockOnProxyApp(
 		SideTxResults: sideTxResults,
 	})
 	beginSideBlockSync_endTime := time.Now().UnixNano() / 1000000
-	logger.Info("BeginSideBlockSync excute time", beginSideBlockSync_endTime-beginSideBlockSync_beginTime)
+	logger.Info("BeginSideBlockSync excute time", "cost", beginSideBlockSync_endTime-beginSideBlockSync_beginTime)
 	if err != nil {
 		logger.Error("Error in proxyAppConn.BeginSideBlock", "err", err)
 		return nil, nil, err
@@ -349,7 +349,7 @@ func execBlockOnProxyApp(
 		}
 	}
 	DeliverTxAsync_total_endTime := time.Now().UnixNano() / 1000000
-	logger.Info("DeliverTxAsync_total excute time", DeliverTxAsync_total_endTime-DeliverTxAsync_total_beginTime)
+	logger.Info("DeliverTxAsync_total excute time", "cost", DeliverTxAsync_total_endTime-DeliverTxAsync_total_beginTime)
 
 	//
 	// Deliver side-tx
@@ -397,7 +397,7 @@ func execBlockOnProxyApp(
 			}
 		}
 		DeliverTxSideAsync_total_endTime := time.Now().UnixNano() / 1000000
-		logger.Info("DeliverTxSideAsync_total excute time", DeliverTxSideAsync_total_endTime-DeliverTxSideAsync_total_beginTime)
+		logger.Info("DeliverTxSideAsync_total excute time", "cost", DeliverTxSideAsync_total_endTime-DeliverTxSideAsync_total_beginTime)
 	}
 
 	//
@@ -408,7 +408,7 @@ func execBlockOnProxyApp(
 	EndBlockSync_beginTime := time.Now().UnixNano() / 1000000
 	abciResponses.EndBlock, err = proxyAppConn.EndBlockSync(abci.RequestEndBlock{Height: block.Height})
 	EndBlockSync_endTime := time.Now().UnixNano() / 1000000
-	logger.Info("EndBlockSync excute time", EndBlockSync_endTime-EndBlockSync_beginTime)
+	logger.Info("EndBlockSync excute time", "cost", EndBlockSync_endTime-EndBlockSync_beginTime)
 
 	if err != nil {
 		logger.Error("Error in proxyAppConn.EndBlock", "err", err)
