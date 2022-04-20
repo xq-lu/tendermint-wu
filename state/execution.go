@@ -3,6 +3,8 @@ package state
 import (
 	"bytes"
 	"fmt"
+	"time"
+
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/fail"
 	"github.com/tendermint/tendermint/libs/log"
@@ -10,7 +12,6 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
-	"time"
 )
 
 //-----------------------------------------------------------------------------
@@ -101,7 +102,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	maxNumEvidence, _ := types.MaxEvidencePerBlock(maxBytes)
 	evidence := blockExec.evpool.PendingEvidence(maxNumEvidence)
 	size := len(commit.Precommits[0].SideTxResults)
-	txsMaxBytes := maxBytes - int64(size) * 120 * int64(state.Validators.Size())
+	txsMaxBytes := maxBytes - int64(size)*120*int64(state.Validators.Size())
 	// Fetch a limited amount of valid txs
 	maxDataBytes := types.MaxDataBytes(txsMaxBytes, state.Validators.Size(), len(evidence))
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxDataBytes, maxGas)
@@ -297,12 +298,15 @@ func execBlockOnProxyApp(
 
 	// Begin block
 	var err error
+	beginBlockSync_beginTime := time.Now().UnixNano() / 1000000
 	abciResponses.BeginBlock, err = proxyAppConn.BeginBlockSync(abci.RequestBeginBlock{
 		Hash:                hash,
 		Header:              header,
 		LastCommitInfo:      commitInfo,
 		ByzantineValidators: byzVals,
 	})
+	beginBlockSync_endTime := time.Now().UnixNano() / 1000000
+	logger.Info("BeginBlockSync excute time", beginBlockSync_endTime-beginBlockSync_beginTime)
 	if err != nil {
 		logger.Error("Error in proxyAppConn.BeginBlock", "err", err)
 		return nil, nil, err
@@ -317,11 +321,14 @@ func execBlockOnProxyApp(
 
 	// TODO get votes from last commit
 	// Side hook for begin block
+	beginSideBlockSync_beginTime := time.Now().UnixNano() / 1000000
 	sideBlockResponse, err := proxyAppConn.BeginSideBlockSync(abci.RequestBeginSideBlock{
 		Hash:          hash,
 		Header:        header,
 		SideTxResults: sideTxResults,
 	})
+	beginSideBlockSync_endTime := time.Now().UnixNano() / 1000000
+	logger.Info("BeginSideBlockSync excute time", beginSideBlockSync_endTime-beginSideBlockSync_beginTime)
 	if err != nil {
 		logger.Error("Error in proxyAppConn.BeginSideBlock", "err", err)
 		return nil, nil, err
@@ -334,12 +341,15 @@ func execBlockOnProxyApp(
 	//
 
 	// Run txs of block.
+	DeliverTxAsync_total_beginTime := time.Now().UnixNano() / 1000000
 	for _, tx := range block.Txs {
 		proxyAppConn.DeliverTxAsync(abci.RequestDeliverTx{Tx: tx})
 		if err := proxyAppConn.Error(); err != nil {
 			return nil, nil, err
 		}
 	}
+	DeliverTxAsync_total_endTime := time.Now().UnixNano() / 1000000
+	logger.Info("DeliverTxAsync_total excute time", DeliverTxAsync_total_endTime-DeliverTxAsync_total_beginTime)
 
 	//
 	// Deliver side-tx
@@ -374,6 +384,7 @@ func execBlockOnProxyApp(
 		proxyAppConn.SetResponseCallback(proxySideCb)
 
 		// Run side-txs of block.
+		DeliverTxSideAsync_total_beginTime := time.Now().UnixNano() / 1000000
 		for txIndex, tx := range block.Txs {
 			txRes := abciResponses.DeliverTx[txIndex]
 
@@ -385,6 +396,8 @@ func execBlockOnProxyApp(
 				}
 			}
 		}
+		DeliverTxSideAsync_total_endTime := time.Now().UnixNano() / 1000000
+		logger.Info("DeliverTxSideAsync_total excute time", DeliverTxSideAsync_total_endTime-DeliverTxSideAsync_total_beginTime)
 	}
 
 	//
@@ -392,7 +405,11 @@ func execBlockOnProxyApp(
 	//
 
 	// End block.
+	EndBlockSync_beginTime := time.Now().UnixNano() / 1000000
 	abciResponses.EndBlock, err = proxyAppConn.EndBlockSync(abci.RequestEndBlock{Height: block.Height})
+	EndBlockSync_endTime := time.Now().UnixNano() / 1000000
+	logger.Info("EndBlockSync excute time", EndBlockSync_endTime-EndBlockSync_beginTime)
+
 	if err != nil {
 		logger.Error("Error in proxyAppConn.EndBlock", "err", err)
 		return nil, nil, err
