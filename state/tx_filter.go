@@ -9,7 +9,7 @@ import (
 // The function limits the size of a transaction to the block's maximum data size.
 func TxPreCheck(state State) mempl.PreCheckFunc {
 	maxDataBytes := types.MaxDataBytesUnknownEvidence(
-		state.ConsensusParams.Block.MaxBytes,
+		int64(1048576),
 		state.Validators.Size(),
 	)
 	return mempl.PreCheckAminoMaxBytes(maxDataBytes)

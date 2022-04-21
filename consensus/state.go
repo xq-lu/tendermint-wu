@@ -3,6 +3,11 @@ package consensus
 import (
 	"bytes"
 	"fmt"
+	"reflect"
+	"runtime/debug"
+	"sync"
+	"time"
+
 	"github.com/pkg/errors"
 	cfg "github.com/tendermint/tendermint/config"
 	cstypes "github.com/tendermint/tendermint/consensus/types"
@@ -14,10 +19,6 @@ import (
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
 	tmtime "github.com/tendermint/tendermint/types/time"
-	"reflect"
-	"runtime/debug"
-	"sync"
-	"time"
 )
 
 //-----------------------------------------------------------------------------
@@ -1277,7 +1278,7 @@ func (cs *ConsensusState) tryFinalizeCommit(height int64) {
 	//	go
 	cs.finalizeCommit(height)
 	endTime := time.Now().UnixNano() / 1000000
-	logger.Info("@@@ finalizeCommit block.", "cost", endTime - startTime)
+	logger.Info("@@@ finalizeCommit block.", "cost", endTime-startTime)
 }
 
 // Increment height and goto cstypes.RoundStepNewHeight
@@ -1305,7 +1306,7 @@ func (cs *ConsensusState) finalizeCommit(height int64) {
 		panic(fmt.Sprintf("+2/3 committed an invalid block: %v", err))
 	}
 	endTime1 := time.Now().UnixNano() / 1000000
-	cs.Logger.Info("@@@ ValidateBlock", "cost", endTime1 - startTime1)
+	cs.Logger.Info("@@@ ValidateBlock", "cost", endTime1-startTime1)
 
 	cs.Logger.Info(fmt.Sprintf("Finalizing commit of block with %d txs", block.NumTxs),
 		"height", block.Height, "hash", block.Hash(), "root", block.AppHash)
@@ -1356,7 +1357,7 @@ func (cs *ConsensusState) finalizeCommit(height int64) {
 	startTime2 := time.Now().UnixNano() / 1000000
 	stateCopy, err = cs.blockExec.ApplyBlock(stateCopy, types.BlockID{Hash: block.Hash(), PartsHeader: blockParts.Header()}, block)
 	endTime2 := time.Now().UnixNano() / 1000000
-	cs.Logger.Info("@@@ ApplyBlock", "height", height, "NumTxs", block.NumTxs, "cost", endTime2 - startTime2)
+	cs.Logger.Info("@@@ ApplyBlock", "height", height, "NumTxs", block.NumTxs, "cost", endTime2-startTime2)
 	if err != nil {
 		cs.Logger.Error("Error on ApplyBlock. Did the application crash? Please restart tendermint", "err", err)
 		err := cmn.Kill()
@@ -1489,11 +1490,10 @@ func (cs *ConsensusState) addProposalBlockPart(msg *BlockPartMessage, peerID p2p
 	if added && cs.ProposalBlockParts.IsComplete() {
 		// Added and completed!
 		//size := len(cs.state.SideTxResponses)
-		//maxSize := cs.state.ConsensusParams.Block.MaxBytes + int64(size) * 160 * int64(cs.state.Validators.Size())
 		_, err = cdc.UnmarshalBinaryLengthPrefixedReader(
 			cs.ProposalBlockParts.GetReader(),
 			&cs.ProposalBlock,
-			cs.state.ConsensusParams.Block.MaxBytes,
+			int64(1048576),
 		)
 		if err != nil {
 			cs.Logger.Error("### Generate block failed.", "H", cs.Height, "maxByte", cs.state.ConsensusParams.Block.MaxBytes, "err", err)

@@ -492,6 +492,10 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 		}
 		totalGas = newTotalGas
 		txs = append(txs, memTx.tx)
+		if len(txs) > 1000 {
+			mem.logger.Info("@@@ total transactions reap exceed 1000,return", "numTx", len(txs))
+			return txs
+		}
 	}
 	return txs
 }
