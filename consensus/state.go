@@ -989,6 +989,7 @@ func (cs *ConsensusState) createProposalBlock() (block *types.Block, blockParts 
 
 	proposerAddr := cs.privValidator.GetPubKey().Address()
 	//sizeof := unsafe.Sizeof(cs.state.SideTxResponses)
+	cs.Logger.Info("invoke CreateProposalBlock", "height", cs.Height, "state", cs.state, "commit", commit,"proposerAddr", proposerAddr)
 	return cs.blockExec.CreateProposalBlock(cs.Height, cs.state, commit, proposerAddr)
 }
 
