@@ -101,8 +101,14 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	// Fetch a limited amount of valid evidence
 	maxNumEvidence, _ := types.MaxEvidencePerBlock(maxBytes)
 	evidence := blockExec.evpool.PendingEvidence(maxNumEvidence)
-	blockExec.logger.Debug("### debug consensus:", "commit.Precommits", commit.Precommits, "commit.Precommits[0]",commit.Precommits[0], "commit.Precommits[0].SideTxResults",commit.Precommits[0].SideTxResults)
-	size := len(commit.Precommits[0].SideTxResults)
+	size := int(0)
+	for key, value :=range commit.Precommits {
+		if commit.Precommits[key] == nil {
+			blockExec.logger.Debug("receive nil precommit,please check your chain's health ")
+			continue
+		}
+		size :=len(value.SideTxResults)
+	}
 	//txsMaxBytes := maxBytes - int64(size)*120*int64(state.Validators.Size())
 	// Fetch a limited amount of valid txs
 	maxDataBytes := types.MaxDataBytes(maxBytes, state.Validators.Size(), len(evidence))
