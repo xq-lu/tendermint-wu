@@ -375,7 +375,7 @@ func (voteSet *VoteSet) GetByAddress(address []byte) *Vote {
 }
 
 func (voteSet *VoteSet) HasTwoThirdsMajority() bool {
-	if voteSet == nil {
+	if voteSet == nil || voteSet.votes ==nil {
 		return false
 	}
 	voteSet.mtx.Lock()

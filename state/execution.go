@@ -101,20 +101,9 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	// Fetch a limited amount of valid evidence
 	maxNumEvidence, _ := types.MaxEvidencePerBlock(maxBytes)
 	evidence := blockExec.evpool.PendingEvidence(maxNumEvidence)
-	size := int(0)
-	for key, value :=range commit.Precommits {
-		if commit.Precommits[key] == nil {
-			blockExec.logger.Debug("receive nil precommit,please check your chain's health ")
-			continue
-		}
-		size :=len(value.SideTxResults)
-	}
-	//txsMaxBytes := maxBytes - int64(size)*120*int64(state.Validators.Size())
 	// Fetch a limited amount of valid txs
 	maxDataBytes := types.MaxDataBytes(maxBytes, state.Validators.Size(), len(evidence))
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxDataBytes, maxGas)
-
-	blockExec.logger.Debug("### Get txs", "height", height, "maxBytes", maxBytes, "size", size, "txsNum", len(txs))
 
 	return state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 }
@@ -456,7 +445,7 @@ func getBeginBlockValidatorInfo(block *types.Block, stateDB dbm.DB) (abci.LastCo
 
 	for i, val := range lastValSet.Validators {
 		var vote *types.CommitSig
-		if i < len(block.LastCommit.Precommits) {
+		if block.LastCommit.Precommits != nil && i < len(block.LastCommit.Precommits) {
 			vote = block.LastCommit.Precommits[i]
 		}
 		voteInfo := abci.VoteInfo{
